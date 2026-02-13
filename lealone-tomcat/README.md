@@ -5,7 +5,7 @@
 
 ## 编译需要
 
-* jdk 1.8+
+* jdk 21+
 * maven 3.8+
 
 
@@ -13,9 +13,9 @@
 
 运行 `mvn clean package -Dmaven.test.skip=true`
 
-生成 jar 包 `target\lealone-tomcat-plugin-6.0.1.jar`
+生成 jar 包 `target/lealone-tomcat-plugin-8.0.0.jar`
 
-假设 jar 包的绝对路径是 `E:\lealone\lealone-plugins\tomcat\target\lealone-tomcat-plugin-6.0.1.jar`
+假设 jar 包的绝对路径是 `E:/lealone/lealone-platform/lealone-tomcat/target/lealone-tomcat-plugin-8.0.0.jar`
 
 
 ## 运行插件
@@ -27,8 +27,8 @@
 ```sql
 create plugin tomcat
   implement by 'com.lealone.plugins.tomcat.TomcatServerEngine' 
-  class path 'E:\lealone\lealone-plugins\tomcat\target\lealone-tomcat-plugin-6.0.1.jar'
-  parameters (port=8080,web_root='E:\lealone\lealone-plugins\tomcat\src\test\resources\web');
+  class path 'E:/lealone/lealone-platform/lealone-tomcat/target/lealone-tomcat-plugin-8.0.0.jar'
+  parameters (port=8080,web_root='E:/lealone/lealone-platform/lealone-tomcat/src/test/resources/web');
  
 start plugin tomcat;
 ```
@@ -48,6 +48,6 @@ drop plugin tomcat;
 
 ## 打开以下 URL 测试
 
-http://localhost:8080/
+http://localhost:8080/index.html
 
 
