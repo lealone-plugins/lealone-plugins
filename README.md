@@ -6,13 +6,11 @@
 ### 1. 在 pom.xml 中增加依赖
 
 ```xml
-    <dependencies>
-        <dependency>
-            <groupId>com.lealone.plugins</groupId>
-            <artifactId>lealone-boot</artifactId>
-            <version>8.0.0-SNAPSHOT</version>
-        </dependency>
-    </dependencies>
+<dependency>
+    <groupId>com.lealone.plugins</groupId>
+    <artifactId>lealone-boot</artifactId>
+    <version>8.0.0-SNAPSHOT</version>
+</dependency>
 ```
 
 ### 2. 在 sql/tables.sql 文件中创建表
@@ -49,7 +47,7 @@ public class UserService {
         // 如果 name = 'zhh', age = 18
         // 对应的sql是: insert into user(name, age) values('zhh', 18);
 	
-	// 链式调用，insert()返回新增记录的 rowId
+        // 链式调用，insert()返回新增记录的 rowId
         return new User().name.set(name).age.set(age).insert();
     }
 
@@ -77,6 +75,8 @@ public class FullStackDemo {
 ```
 
 在浏览器中打开下面的 URL 进行测试:
+
 http://localhost:8080/service/user_service/addUser?name=zhh&age=18
+
 http://localhost:8080/service/user_service/findByName?name=zhh
 
