@@ -32,7 +32,8 @@ generate code './src/main/java' -- User 类的源文件所在的根目录
 ### 3. 在 sql/services.sql 文件中创建服务
 
 ```sql
-create service if not exists user_service implement by 'com.lealone.examples.fullstack.UserService'
+create service if not exists user_service
+  implement by 'com.lealone.examples.fullstack.UserService'
 ```
 
 ### 4. 实现服务
@@ -47,7 +48,9 @@ public class UserService {
     public Long addUser(String name, Integer age) {
         // 如果 name = 'zhh', age = 18
         // 对应的sql是: insert into user(name, age) values('zhh', 18);
-        return new User().name.set(name).age.set(age).insert(); // 链式调用，insert()返回新增记录的 rowId
+	
+	// 链式调用，insert()返回新增记录的 rowId
+        return new User().name.set(name).age.set(age).insert();
     }
 
     public User findByName(String name) {
@@ -71,6 +74,7 @@ public class FullStackDemo {
         LealoneApplication.start("test", "./sql/tables.sql", "./sql/services.sql");
     }
 }
+```
 
 在浏览器中打开下面的 URL 进行测试:
 http://localhost:8080/service/user_service/addUser?name=zhh&age=18
