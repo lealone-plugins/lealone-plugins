@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import com.lealone.common.util.CaseInsensitiveMap;
 import com.lealone.common.util.StringUtils;
 import com.lealone.main.Lealone;
+import com.lealone.plugins.service.http.HttpRouter;
 import com.lealone.sql.config.Config;
 
 public class LealoneApplication {
@@ -37,6 +38,11 @@ public class LealoneApplication {
         config.put("default_schema", schemaName);
     }
 
+    public void setInitSql(String initSql) {
+        argList.add("-initSql");
+        argList.add(initSql);
+    }
+
     public void setSqlScripts(String... sqlScripts) {
         argList.add("-sqlScripts");
         argList.add(StringUtils.arrayCombine(sqlScripts, ','));
@@ -57,6 +63,18 @@ public class LealoneApplication {
 
     public void setPort(int port) {
         config.put("port", String.valueOf(port));
+    }
+
+    public void setEnvironment(String env) {
+        config.put("environment", env);
+    }
+
+    public void setRouter(String router) {
+        config.put("router", router);
+    }
+
+    public void setRouter(Class<? extends HttpRouter> router) {
+        setRouter(router.getCanonicalName());
     }
 
     public void start() {
