@@ -34,7 +34,7 @@ public class TomcatRouter implements HttpRouter {
 
     public void init(Map<String, String> config) {
         addServlet("serviceServlet", new TomcatServiceServlet(new ServiceHandler(config)), "/service/*");
-        addServlet("defaultServlet", new TomcatDefaultServlet(config), "/*");
+        addServlet("defaultServlet", new TomcatDefaultServlet(config), "/");
         tomcatServer.getContext().addWelcomeFile("index.html");
     }
 
