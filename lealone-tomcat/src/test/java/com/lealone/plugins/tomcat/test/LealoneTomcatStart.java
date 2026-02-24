@@ -8,10 +8,8 @@ package com.lealone.plugins.tomcat.test;
 import java.util.Map;
 
 import com.lealone.main.Lealone;
-import com.lealone.plugins.service.http.HttpServer;
 import com.lealone.plugins.tomcat.TomcatRouter;
-import com.lealone.plugins.tomcat.TomcatServer;
-import com.lealone.plugins.tomcat.test.EmbedTomcatStart.VirtualThreadTestServlet;
+import com.lealone.plugins.tomcat.test.EmbedTomcatStart.TestServlet;
 
 public class LealoneTomcatStart extends TomcatRouter {
 
@@ -21,10 +19,9 @@ public class LealoneTomcatStart extends TomcatRouter {
     }
 
     @Override
-    public void init(HttpServer server, Map<String, String> config) {
-        super.init(server, config);
-        TomcatServer tomcatServer = (TomcatServer) server;
-        tomcatServer.addServlet("virtualThreadTestServlet", new VirtualThreadTestServlet());
-        tomcatServer.addServletMappingDecoded("/test", "virtualThreadTestServlet");
+    public void init(Map<String, String> config) {
+        super.init(config);
+        tomcatServer.addServlet("testServlet", new TestServlet());
+        tomcatServer.addServletMappingDecoded("/test", "testServlet");
     }
 }

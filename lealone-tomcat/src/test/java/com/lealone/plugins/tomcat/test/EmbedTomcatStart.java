@@ -44,8 +44,8 @@ public class EmbedTomcatStart {
         Tomcat.addServlet(ctx, "defaultServlet", new DefaultServlet());
         ctx.addServletMappingDecoded("/", "defaultServlet");
 
-        Tomcat.addServlet(ctx, "virtualThreadTestServlet", new VirtualThreadTestServlet());
-        ctx.addServletMappingDecoded("/test", "virtualThreadTestServlet");
+        Tomcat.addServlet(ctx, "testServlet", new TestServlet());
+        ctx.addServletMappingDecoded("/test", "testServlet");
 
         tomcat.start();
         System.out.println("tomcat started");
@@ -96,8 +96,8 @@ public class EmbedTomcatStart {
         }
     }
 
-    // @WebServlet("/test")
-    public static class VirtualThreadTestServlet extends HttpServlet {
+    // http://localhost:8080/test
+    public static class TestServlet extends HttpServlet {
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                 throws ServletException, IOException {
