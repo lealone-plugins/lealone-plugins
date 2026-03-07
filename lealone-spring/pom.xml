@@ -7,26 +7,35 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.lealone</groupId>
-        <artifactId>lealone</artifactId>
+        <groupId>com.lealone.plugins</groupId>
+        <artifactId>lealone-plugins</artifactId>
         <version>8.0.0-SNAPSHOT</version>
-        <relativePath/>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <groupId>com.lealone.plugins</groupId>
-    <artifactId>lealone-plugins</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>lealone-spring</artifactId>
+    <packaging>jar</packaging>
     <version>8.0.0-SNAPSHOT</version>
 
-    <modules>
-        <module>lealone-orm</module>
-        <module>lealone-service</module>
-        <module>lealone-tomcat</module>
-        <module>lealone-boot</module>
-        <module>lealone-spring</module>
-        <module>lealone-python</module>
-        <module>lealone-javascript</module>
-    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>com.lealone.plugins</groupId>
+            <artifactId>lealone-tomcat</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>tomcat-embed-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <version>3.4.13</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>

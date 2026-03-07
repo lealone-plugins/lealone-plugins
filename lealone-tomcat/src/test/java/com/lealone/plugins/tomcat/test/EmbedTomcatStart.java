@@ -20,7 +20,6 @@ import org.apache.tomcat.util.net.SSLHostConfig;
 import org.apache.tomcat.util.net.SSLHostConfigCertificate;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -102,15 +101,18 @@ public class EmbedTomcatStart {
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                 throws ServletException, IOException {
             resp.setContentType("text/plain;charset=UTF-8");
-            // java.io.PrintWriter out = resp.getWriter();
-            // out.println("Hello Servlet");
+            java.io.PrintWriter out = resp.getWriter();
+            out.println("Hello Servlet");
+            out.flush();
+
             // StringBuffer buff = new StringBuffer();
             // for (int i = 0; i < 9000; i++) {
             // buff.append(i);
             // }
             // out.println(buff.toString());
-            ServletOutputStream output = resp.getOutputStream();
-            output.write(bytes);
+
+            // ServletOutputStream output = resp.getOutputStream();
+            // output.write(bytes);
             // output.flush();
         }
     }
