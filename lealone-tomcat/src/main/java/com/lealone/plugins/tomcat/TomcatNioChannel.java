@@ -15,7 +15,7 @@ public class TomcatNioChannel extends NioChannel {
 
     private int batchCount;
     private int maxSize = 128 * 1024;
-    private ByteBuffer writeBuffer = ByteBuffer.allocateDirect(10 * 1024 * 1024);
+    private ByteBuffer writeBuffer = ByteBuffer.allocateDirect(maxSize * 2);
 
     public TomcatNioChannel(SocketBufferHandler bufHandler) {
         super(bufHandler);
@@ -24,9 +24,13 @@ public class TomcatNioChannel extends NioChannel {
     @Override
     public int write(ByteBuffer src) throws IOException {
         int size = src.limit();
-        writeBuffer.put(src);
-        if (++batchCount > 100 || writeBuffer.position() > maxSize) {
-            batchWrite(writeBuffer);
+        if (size >= maxSize) {
+            batchWrite(src);
+        } else {
+            writeBuffer.put(src);
+            if (++batchCount > 100 || writeBuffer.position() > maxSize) {
+                batchWrite(writeBuffer);
+            }
         }
         return size;
     }
