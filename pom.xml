@@ -19,13 +19,9 @@
     <version>8.0.0-SNAPSHOT</version>
 
     <modules>
-        <module>lealone-orm</module>
-        <module>lealone-service</module>
-        <module>lealone-tomcat</module>
-        <module>lealone-boot</module>
-        <module>lealone-spring</module>
-        <module>lealone-python</module>
-        <module>lealone-javascript</module>
+        <module>spring</module>
+        <module>python</module>
+        <module>javascript</module>
     </modules>
 
     <build>
