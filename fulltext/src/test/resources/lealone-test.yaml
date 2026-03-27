@@ -1,0 +1,16 @@
+# Copyright Lealone Database Group.
+# Licensed under the Server Side Public License, v 1.
+# Initial Developer: zhh
+
+base_dir: target/test-data
+listen_address: 127.0.0.1
+
+protocol_server_engines:
+  - name: TCP
+    enabled: true 
+  - name: Mongo
+    enabled: false
+  - name: MySQL
+    enabled: false
+  - name: PostgreSQL
+    enabled: false
