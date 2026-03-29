@@ -19,8 +19,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.lealone.plugins</groupId>
-            <artifactId>lealone-tomcat</artifactId>
+            <groupId>com.lealone</groupId>
+            <artifactId>lealone-http</artifactId>
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
