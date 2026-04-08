@@ -2,9 +2,9 @@
 
 ## 数据库
 
-  * [MySQL](https://github.com/lealone-plugins/lealone-mysql)
-  * [PostgreSQL](https://github.com/lealone-plugins/lealone-postgresql)
-  * [MongoDB](https://github.com/lealone-plugins/lealone-mongo)
+  * [MySQL](https://github.com/lealone-plugins/lealone-plugins/tree/main/mysql)
+  * [PostgreSQL](https://github.com/lealone-plugins/lealone-plugins/tree/main/postgresql)
+  * [MongoDB](https://github.com/lealone-plugins/lealone-plugins/tree/main/mongo)
 
 
 ## 存储引擎

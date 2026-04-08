@@ -1,0 +1,15 @@
+# Copyright Lealone Database Group.
+# Licensed under the Server Side Public License, v 1.
+# Initial Developer: zhh
+
+base_dir: target/test-data
+
+protocol_server_engines:
+  - name: Mongo
+    enabled: true
+    parameters: {
+        port: 9310,
+        allow_others: true,
+        ssl: false,
+        session_timeout: -1
+    }

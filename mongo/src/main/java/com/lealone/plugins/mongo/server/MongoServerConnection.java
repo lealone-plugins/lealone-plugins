@@ -1,0 +1,283 @@
+/*
+ * Copyright Lealone Database Group.
+ * Licensed under the Server Side Public License, v 1.
+ * Initial Developer: zhh
+ */
+package com.lealone.plugins.mongo.server;
+
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.UUID;
+
+import org.bson.BsonBinaryReader;
+import org.bson.BsonBinaryWriter;
+import org.bson.BsonDocument;
+import org.bson.ByteBufNIO;
+import org.bson.codecs.BsonDocumentCodec;
+import org.bson.codecs.DecoderContext;
+import org.bson.codecs.EncoderContext;
+import org.bson.io.BasicOutputBuffer;
+import org.bson.io.ByteBufferBsonInput;
+
+import com.lealone.common.exceptions.DbException;
+import com.lealone.common.logging.Logger;
+import com.lealone.common.logging.LoggerFactory;
+import com.lealone.common.util.StatementBuilder;
+import com.lealone.db.Database;
+import com.lealone.db.scheduler.Scheduler;
+import com.lealone.db.session.ServerSession;
+import com.lealone.db.session.Session;
+import com.lealone.net.NetBuffer;
+import com.lealone.net.TransferOutputStream.GlobalWritableChannel;
+import com.lealone.net.WritableChannel;
+import com.lealone.plugins.mongo.bson.command.BsonCommand;
+import com.lealone.plugins.mongo.bson.command.auth.ScramSaslProcessor;
+import com.lealone.plugins.mongo.bson.command.legacy.LCDelete;
+import com.lealone.plugins.mongo.bson.command.legacy.LCInsert;
+import com.lealone.plugins.mongo.bson.command.legacy.LCQuery;
+import com.lealone.plugins.mongo.bson.command.legacy.LCUpdate;
+import com.lealone.server.AsyncServerConnection;
+import com.lealone.server.scheduler.ServerSessionInfo;
+
+public class MongoServerConnection extends AsyncServerConnection {
+
+    private static final Logger logger = LoggerFactory.getLogger(MongoServerConnection.class);
+    private static final boolean DEBUG = BsonCommand.DEBUG;
+
+    private final BsonDocumentCodec codec = new BsonDocumentCodec();
+    private final DecoderContext decoderContext = DecoderContext.builder().build();
+    private final EncoderContext encoderContext = EncoderContext.builder().build();
+
+    private final HashMap<UUID, ServerSession> sessions = new HashMap<>();
+    private final HashMap<String, ServerSessionInfo> sessionInfoMap = new HashMap<>();
+
+    private final MongoServer server;
+    private final int connectionId;
+    private final GlobalWritableChannel channel;
+
+    private ScramSaslProcessor scramSaslServerProcessor;
+
+    public MongoServerConnection(MongoServer server, WritableChannel channel, Scheduler scheduler,
+            int connectionId) {
+        super(channel, scheduler);
+        this.server = server;
+        this.connectionId = connectionId;
+        this.channel = new GlobalWritableChannel(writableChannel, scheduler.getOutputBuffer());
+    }
+
+    public ScramSaslProcessor getScramSaslServerProcessor() {
+        return scramSaslServerProcessor;
+    }
+
+    public void setScramSaslServerProcessor(ScramSaslProcessor scramSaslServerProcessor) {
+        this.scramSaslServerProcessor = scramSaslServerProcessor;
+    }
+
+    @Override
+    public void closeSession(ServerSessionInfo si) {
+    }
+
+    @Override
+    public int getSessionCount() {
+        return sessionInfoMap.size();
+    }
+
+    public Scheduler getScheduler() {
+        return scheduler;
+    }
+
+    public int getConnectionId() {
+        return connectionId;
+    }
+
+    public HashMap<UUID, ServerSession> getSessions() {
+        return sessions;
+    }
+
+    public ServerSessionInfo getServerSessionInfo(BsonDocument doc) {
+        Database db = BsonCommand.getDatabase(doc);
+        return getServerSessionInfo(db);
+    }
+
+    public ServerSessionInfo getServerSessionInfo(Database db) {
+        ServerSessionInfo si = sessionInfoMap.get(db.getName());
+        if (si == null) {
+            ServerSession session = db.createSession(BsonCommand.getUser(db), scheduler);
+            si = new ServerSessionInfo(scheduler, this, session, -1, -1);
+            sessionInfoMap.put(db.getName(), si);
+            scheduler.addSessionInfo(si);
+        }
+        return si;
+    }
+
+    public int executeUpdateLocal(Database db, StatementBuilder sql) {
+        return executeUpdateLocal(db, sql.toString());
+    }
+
+    public int executeUpdateLocal(Database db, String sql) {
+        return getServerSessionInfo(db).getSession().executeUpdateLocal(sql.toString());
+    }
+
+    @Override
+    public void handleException(Exception e) {
+        server.removeConnection(this);
+    }
+
+    @Override
+    public void close() {
+        super.close();
+        for (ServerSession s : sessions.values()) {
+            s.close();
+        }
+        sessions.clear();
+        sessionInfoMap.clear();
+    }
+
+    private void sendMessage(byte[] data) {
+        try {
+            channel.startWrite(Session.STATUS_OK);
+            channel.getByteBuffer().put(data);
+            channel.flush();
+        } catch (Exception e) {
+            logger.error("Failed to send message", e);
+        }
+    }
+
+    @Override
+    public int getPacketLength(ByteBuffer buffer) {
+        int length = (buffer.get() & 0xff);
+        length |= (buffer.get() & 0xff) << 8;
+        length |= (buffer.get() & 0xff) << 16;
+        length |= (buffer.get() & 0xff) << 20;
+        return length - 4;
+    }
+
+    @Override
+    public void handle(NetBuffer buffer, boolean autoRecycle) {
+        int requestId = 0;
+        int opCode = 0;
+        try {
+            ByteBuffer byteBuffer = buffer.getByteBuffer();
+            ByteBufferBsonInput input = new ByteBufferBsonInput(new ByteBufNIO(byteBuffer));
+            requestId = input.readInt32();
+            int responseTo = input.readInt32();
+            opCode = input.readInt32();
+            if (DEBUG)
+                logger.info("opCode: {}, requestId: {}, responseTo: {}", opCode, requestId, responseTo);
+            switch (opCode) {
+            case 2013:
+                handleMessage(input, requestId, responseTo, buffer);
+                break;
+            case 2012:
+                handleCompressedMessage(input, requestId, responseTo, buffer);
+                break;
+            case 2001:
+                LCUpdate.execute(input, this);
+                break;
+            case 2002:
+                LCInsert.execute(input, this);
+                break;
+            case 2004:
+                LCQuery.execute(input, requestId, this);
+                break;
+            case 2006:
+                LCDelete.execute(input, this);
+                break;
+            default:
+                logger.warn("Unknow opCode: {}", opCode);
+            }
+        } catch (Throwable e) {
+            logger.error("Failed to handle packet", e);
+            sendError(null, requestId, e);
+        } finally {
+            if (opCode != 2013 && autoRecycle)
+                buffer.recycle();
+        }
+    }
+
+    // TODO 参考com.mongodb.internal.connection.Compressor
+    private void handleCompressedMessage(ByteBufferBsonInput input, int requestId, int responseTo,
+            NetBuffer buffer) {
+        input.readInt32(); // originalOpcode
+        input.readInt32(); // uncompressedSize
+        input.readByte(); // compressorId
+        input.close();
+        sendResponse(requestId);
+    }
+
+    private void handleMessage(ByteBufferBsonInput input, int requestId, int responseTo,
+            NetBuffer buffer) {
+        input.readInt32(); // flagBits
+        int type = input.readByte();
+        BsonDocument response = null;
+        switch (type) {
+        case 0: {
+            handleCommand(input, requestId, buffer);
+            return;
+        }
+        case 1: {
+            break;
+        }
+        default:
+        }
+        input.close();
+        sendResponse(requestId, response);
+    }
+
+    private void handleCommand(ByteBufferBsonInput input, int requestId, NetBuffer buffer) {
+        BsonDocument doc = decode(input);
+        if (DEBUG)
+            logger.info("command: {}", doc.toJson());
+        ServerSessionInfo si = getServerSessionInfo(doc);
+        MongoTask task = new MongoTask(this, input, doc, si, requestId, buffer);
+        si.submitTask(task);
+    }
+
+    public void sendResponse(int requestId) {
+        BsonDocument document = new BsonDocument();
+        BsonCommand.setWireVersion(document);
+        BsonCommand.setOk(document);
+        BsonCommand.setN(document, 1);
+        sendResponse(requestId, document);
+    }
+
+    public void sendResponse(int requestId, BsonDocument document) {
+        BasicOutputBuffer out = new BasicOutputBuffer();
+        out.writeInt32(0);
+        out.writeInt32(requestId);
+        out.writeInt32(requestId);
+        out.writeInt32(1);
+
+        out.writeInt32(0);
+        out.writeInt64(0);
+        out.writeInt32(0);
+        out.writeInt32(1);
+
+        encode(out, document);
+
+        out.writeInt32(0, out.getPosition());
+        sendMessage(out.toByteArray());
+        out.close();
+    }
+
+    @Override
+    public void sendError(Session session, int requestId, Throwable t) {
+        BsonDocument document = new BsonDocument();
+        BsonCommand.setWireVersion(document);
+        BsonCommand.append(document, "ok", 0);
+        BsonCommand.setN(document, 1);
+        BsonCommand.append(document, "code", DbException.convert(t).getErrorCode());
+        BsonCommand.append(document, "errmsg", t.getMessage() == null ? "" : t.getMessage());
+        sendResponse(requestId, document);
+    }
+
+    public BsonDocument decode(ByteBufferBsonInput input) {
+        BsonBinaryReader reader = new BsonBinaryReader(input);
+        return codec.decode(reader, decoderContext);
+    }
+
+    private void encode(BasicOutputBuffer out, BsonDocument document) {
+        BsonBinaryWriter bsonBinaryWriter = new BsonBinaryWriter(out);
+        codec.encode(bsonBinaryWriter, document, encoderContext);
+    }
+}
