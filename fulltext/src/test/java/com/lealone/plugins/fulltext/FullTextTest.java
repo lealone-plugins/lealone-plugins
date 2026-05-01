@@ -7,11 +7,7 @@ package com.lealone.plugins.fulltext;
 
 import com.lealone.main.Lealone;
 
-public class FullTextTest { // extends TestBase {
-
-    // @Test
-    // public void run() {
-    // }
+public class FullTextTest {
 
     public static void main(String[] args) {
         Lealone.main(args);
