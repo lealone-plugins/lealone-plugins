@@ -30,8 +30,9 @@ public class EmbedTomcatStart {
     // https://localhost:8443/test
     // http://localhost:8080/index.html
     public static void main(String[] args) throws LifecycleException, IOException {
+        long t1 = System.currentTimeMillis();
         Tomcat tomcat = new Tomcat();
-        tomcat.setBaseDir("/target/tomcat");
+        tomcat.setBaseDir("./target/tomcat");
         StandardVirtualThreadExecutor virtualThreadExecutor = new StandardVirtualThreadExecutor();
         virtualThreadExecutor.setName("virtual-thread-executor");
         tomcat.getService().addExecutor(virtualThreadExecutor);
@@ -39,7 +40,7 @@ public class EmbedTomcatStart {
         setConnector(tomcat, virtualThreadExecutor);
         // setSSLConnector(tomcat, virtualThreadExecutor);
 
-        Context ctx = tomcat.addContext("", new File("./src/test/resources/web").getCanonicalPath());
+        Context ctx = tomcat.addContext("", new File("./src/test/resources/http").getCanonicalPath());
         Tomcat.addServlet(ctx, "defaultServlet", new DefaultServlet());
         ctx.addServletMappingDecoded("/", "defaultServlet");
 
@@ -47,7 +48,7 @@ public class EmbedTomcatStart {
         ctx.addServletMappingDecoded("/test", "testServlet");
 
         tomcat.start();
-        System.out.println("tomcat started");
+        System.out.println("tomcat started, time: " + (System.currentTimeMillis() - t1) + " ms");
         tomcat.getServer().await();
     }
 
